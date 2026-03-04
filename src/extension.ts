@@ -141,14 +141,14 @@ export function activate(context: vscode.ExtensionContext) {
 
       case 'checkApiKey': {
         const config = vscode.workspace.getConfiguration('cortex');
-        const key = config.get<string>('anthropicApiKey') || '';
+        const key = config.get<string>('geminiApiKey') || '';
         CortexPanel.postMessage({ type: 'apiKeyStatus', hasKey: key.length > 0 });
         break;
       }
 
       case 'saveApiKey': {
         const config = vscode.workspace.getConfiguration('cortex');
-        await config.update('anthropicApiKey', message.key, vscode.ConfigurationTarget.Global);
+        await config.update('geminiApiKey', message.key, vscode.ConfigurationTarget.Global);
         CortexPanel.postMessage({ type: 'apiKeyStatus', hasKey: true });
         vscode.window.showInformationMessage('Cortex: API key saved successfully ✓');
         break;

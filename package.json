@@ -53,10 +53,10 @@
     "configuration": {
       "title": "Cortex AI",
       "properties": {
-        "cortex.anthropicApiKey": {
+        "cortex.geminiApiKey": {
           "type": "string",
           "default": "",
-          "description": "Your Anthropic API key for Claude"
+          "description": "Your Google Gemini API key"
         },
         "cortex.autoRecover": {
           "type": "boolean",
