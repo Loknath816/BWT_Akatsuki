@@ -102,6 +102,7 @@ export class VoiceServer {
   }
 
   private getRecorderHtml(): string {
+    const port = this.port;
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -112,126 +113,160 @@ export class VoiceServer {
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, 'Inter', sans-serif;
-    background: #0F1117;
+    background: #111318;
     color: #E2E8F0;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .container {
+    display: flex;
     flex-direction: column;
-    gap: 24px;
-    padding: 32px;
+    align-items: center;
+    gap: 16px;
+    padding: 28px 32px;
+    background: #1A1D24;
+    border: 1px solid #2D3748;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    min-width: 260px;
   }
-  .logo { font-size: 28px; font-weight: 800; color: #CF7B2E; letter-spacing: -1px; }
-  .subtitle { font-size: 14px; color: #718096; }
+  .brand { font-size: 11px; font-weight: 700; color: #CF7B2E; letter-spacing: 3px; text-transform: uppercase; }
   .orb {
-    width: 120px; height: 120px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(168,85,247,0.4), rgba(168,85,247,0.05));
-    border: 2px solid rgba(168,85,247,0.5);
+    width: 80px; height: 80px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 44px; cursor: pointer;
+    font-size: 32px; position: relative;
     transition: all 0.3s;
-    box-shadow: 0 0 30px rgba(168,85,247,0.2);
   }
-  .orb:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(168,85,247,0.4); }
-  .orb.recording {
-    animation: pulse 1.2s ease-in-out infinite;
-    border-color: #EF4444;
-    box-shadow: 0 0 0 0 rgba(239,68,68,0.4);
+  .orb-ring {
+    position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid rgba(168,85,247,0.4);
+    animation: ringPulse 2s ease-in-out infinite;
   }
-  .status {
-    font-size: 15px; color: #A0AEC0; text-align: center;
-    min-height: 24px; transition: all 0.3s;
+  .orb.recording .orb-ring { border-color: #EF4444; animation: ringPulseRed 0.8s ease-in-out infinite; }
+  .orb.done .orb-ring { border-color: #48BB78; animation: none; }
+
+  .status { font-size: 13px; color: #718096; text-align: center; min-height: 18px; }
+  .status.recording { color: #FC8181; font-weight: 600; }
+  .status.sending { color: #F6AD55; }
+  .status.done { color: #68D391; font-weight: 600; }
+  .status.error { color: #FC8181; }
+
+  .timer {
+    font-size: 22px; font-weight: 700; color: #E2E8F0;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -1px;
+    min-height: 28px;
   }
-  .status.active { color: #EF4444; font-weight: 600; }
-  .status.success { color: #48BB78; font-weight: 600; }
-  .btn {
-    padding: 12px 32px; border-radius: 10px; border: none;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    transition: all 0.2s;
+  .timer.warning { color: #FC8181; }
+
+  .stop-btn {
+    padding: 8px 24px; border-radius: 8px; border: none;
+    background: #553C9A; color: white; font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+    display: none;
   }
-  .btn-record { background: #553C9A; color: white; }
-  .btn-record:hover { background: #6B46C1; }
-  .btn-stop { background: #C53030; color: white; display: none; }
-  .btn-stop:hover { background: #9B2C2C; }
-  .transcript-box {
-    width: 100%; max-width: 400px;
-    background: #1A202C; border: 1px solid #2D3748;
-    border-radius: 10px; padding: 16px;
-    font-size: 14px; color: #E2E8F0;
-    min-height: 60px; display: none;
-    line-height: 1.6;
+  .stop-btn:hover { background: #6B46C1; }
+  .stop-btn.visible { display: block; }
+
+  .transcript {
+    font-size: 12px; color: #A0AEC0; text-align: center;
+    font-style: italic; max-width: 220px; line-height: 1.5;
+    min-height: 16px;
   }
-  .close-hint { font-size: 12px; color: #4A5568; text-align: center; }
-  @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
-    70% { box-shadow: 0 0 0 20px rgba(239,68,68,0); }
-    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+
+  @keyframes ringPulse {
+    0%,100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 1; }
+  }
+  @keyframes ringPulseRed {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.6; }
   }
 </style>
 </head>
 <body>
-  <div>
-    <div class="logo">🧠 CORTEX</div>
+<div class="container">
+  <div class="brand">CORTEX VOICE</div>
+  <div class="orb" id="orb">
+    <div class="orb-ring"></div>
+    <span id="orb-emoji">🎙️</span>
   </div>
-  <div class="subtitle">Voice Assistant — Speak your question</div>
-
-  <div class="orb" id="orb" onclick="toggleRecording()">🎙️</div>
-
-  <div class="status" id="status">Click to start recording</div>
-
-  <div style="display:flex;gap:12px">
-    <button class="btn btn-record" id="btn-record" onclick="toggleRecording()">🎙️ Start Recording</button>
-    <button class="btn btn-stop" id="btn-stop" onclick="stopRecording()">⬛ Stop & Send</button>
-  </div>
-
-  <div class="transcript-box" id="transcript-box"></div>
-  <div class="close-hint">This tab will auto-close after sending. Switch back to VS Code.</div>
+  <div class="timer" id="timer"></div>
+  <div class="status" id="status">Requesting microphone...</div>
+  <button class="stop-btn" id="stop-btn" onclick="stopNow()">⬛ Send Now</button>
+  <div class="transcript" id="transcript"></div>
+</div>
 
 <script>
 let mediaRecorder = null;
 let audioChunks = [];
-let isRecording = false;
+let timerInterval = null;
+let seconds = 0;
+let maxSeconds = 10;
+let autoStopTimeout = null;
 
-function toggleRecording() {
-  isRecording ? stopRecording() : startRecording();
-}
+// Resize window to compact popup
+window.resizeTo(320, 300);
 
-async function startRecording() {
+async function init() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioChunks = [];
-
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus' : 'audio/webm';
-
-    mediaRecorder = new MediaRecorder(stream, { mimeType });
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-    mediaRecorder.onstop = () => sendAudio(stream, mimeType);
-    mediaRecorder.start(250);
-
-    isRecording = true;
-    document.getElementById('orb').classList.add('recording');
-    document.getElementById('orb').textContent = '🔴';
-    document.getElementById('status').textContent = '🔴 Recording... Click stop when done';
-    document.getElementById('status').className = 'status active';
-    document.getElementById('btn-record').style.display = 'none';
-    document.getElementById('btn-stop').style.display = 'inline-block';
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    startRecording(stream);
   } catch (err) {
-    document.getElementById('status').textContent = '❌ Mic access denied — please allow microphone in browser';
-    document.getElementById('status').className = 'status';
+    setStatus('❌ Mic blocked — allow access in browser', 'error');
+    document.getElementById('orb-emoji').textContent = '❌';
   }
 }
 
-function stopRecording() {
+function startRecording(stream) {
+  audioChunks = [];
+  const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+    ? 'audio/webm;codecs=opus' : 'audio/webm';
+
+  mediaRecorder = new MediaRecorder(stream, { mimeType });
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+  mediaRecorder.onstop = () => sendAudio(stream, mimeType);
+  mediaRecorder.start(200);
+
+  // UI
+  document.getElementById('orb').classList.add('recording');
+  document.getElementById('orb-emoji').textContent = '🔴';
+  document.getElementById('stop-btn').classList.add('visible');
+  setStatus('Recording... speak now', 'recording');
+
+  // Countdown timer
+  seconds = 0;
+  timerInterval = setInterval(() => {
+    seconds++;
+    const remaining = maxSeconds - seconds;
+    document.getElementById('timer').textContent = remaining + 's';
+    if (remaining <= 3) {
+      document.getElementById('timer').className = 'timer warning';
+    }
+    if (seconds >= maxSeconds) {
+      stopNow();
+    }
+  }, 1000);
+
+  // Auto stop after maxSeconds
+  autoStopTimeout = setTimeout(stopNow, maxSeconds * 1000);
+}
+
+function stopNow() {
+  clearInterval(timerInterval);
+  clearTimeout(autoStopTimeout);
+  document.getElementById('timer').textContent = '';
+  document.getElementById('stop-btn').classList.remove('visible');
+  document.getElementById('orb').classList.remove('recording');
+  document.getElementById('orb-emoji').textContent = '⟳';
+  setStatus('Transcribing with Whisper AI...', 'sending');
+
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     mediaRecorder.stop();
   }
-  isRecording = false;
-  document.getElementById('orb').classList.remove('recording');
-  document.getElementById('orb').textContent = '⟳';
-  document.getElementById('status').textContent = '⟳ Sending to Whisper AI...';
-  document.getElementById('btn-stop').style.display = 'none';
 }
 
 async function sendAudio(stream, mimeType) {
@@ -241,32 +276,37 @@ async function sendAudio(stream, mimeType) {
   reader.onloadend = async () => {
     const base64 = reader.result.split(',')[1];
     try {
-      const resp = await fetch('http://127.0.0.1:${this.port}/audio', {
+      const resp = await fetch('http://127.0.0.1:${port}/audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ audio: base64, mimeType })
       });
       const data = await resp.json();
       if (data.transcript) {
-        document.getElementById('orb').textContent = '✅';
-        document.getElementById('status').textContent = '✅ Sent to Cortex!';
-        document.getElementById('status').className = 'status success';
-        document.getElementById('transcript-box').textContent = '"' + data.transcript + '"';
-        document.getElementById('transcript-box').style.display = 'block';
-        document.getElementById('btn-record').style.display = 'inline-block';
-        document.getElementById('btn-record').textContent = '🎙️ Record Again';
-        setTimeout(() => window.close(), 3000);
+        document.getElementById('orb').classList.add('done');
+        document.getElementById('orb-emoji').textContent = '✅';
+        setStatus('Sent to Cortex!', 'done');
+        document.getElementById('transcript').textContent = '"' + data.transcript + '"';
+        setTimeout(() => window.close(), 1800);
       } else {
-        throw new Error(data.error || 'No transcript');
+        throw new Error(data.error || 'No transcript received');
       }
     } catch (err) {
-      document.getElementById('status').textContent = '❌ Error: ' + err.message;
-      document.getElementById('orb').textContent = '🎙️';
-      document.getElementById('btn-record').style.display = 'inline-block';
+      setStatus('Error: ' + err.message, 'error');
+      document.getElementById('orb-emoji').textContent = '❌';
     }
   };
   reader.readAsDataURL(blob);
 }
+
+function setStatus(text, type) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = 'status ' + (type || '');
+}
+
+// Auto-start immediately
+window.addEventListener('load', init);
 </script>
 </body>
 </html>`;
