@@ -938,14 +938,21 @@ e.g. Database model for products table"></textarea>
     <div class="card">
       <div class="voice-center">
         <div class="voice-orb" id="voice-orb">🎙️</div>
-        <div class="voice-status" id="voice-status">Click to speak — ask anything about your code</div>
-        <div class="btn-row" style="justify-content:center;margin-top:0;margin-bottom:14px">
-          <button class="btn btn-primary" id="voice-btn" style="background:var(--purple);box-shadow:0 2px 6px rgba(85,60,154,0.3)">🎙️ Start Listening</button>
+        <div class="voice-status" id="voice-status">Click the orb to open voice input</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px">
+          <button class="btn" id="voice-btn" style="background:var(--purple);color:white;box-shadow:0 2px 6px rgba(85,60,154,0.3)">🎙️ Ask a Question</button>
           <button class="btn btn-secondary" id="stop-btn">⬛ Stop</button>
         </div>
+        <div id="voice-error" style="display:none;font-size:11px;color:var(--red);margin-bottom:8px;padding:8px;background:var(--red-bg);border-radius:6px;border:1px solid #FEB2B2"></div>
       </div>
 
-      <div class="section-title">Try asking</div>
+      <div class="section-title">Or type your question</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input class="input" id="voice-text-input" placeholder="Ask anything about your code..." style="flex:1"/>
+        <button class="btn" id="voice-send-btn" style="background:var(--purple);color:white;white-space:nowrap">Send</button>
+      </div>
+
+      <div class="section-title">Quick questions</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px">
         <button class="example-q" data-question="Where is the authentication logic?">"Where is the authentication logic?"</button>
         <button class="example-q" data-question="What does the payment module do?">"What does the payment module do?"</button>
@@ -1196,48 +1203,44 @@ function renderBoilerplate(d) {
 }
 
 // ── VOICE ──
+// ── VOICE via Extension (PowerShell Speech Recognition) ──
 function toggleVoice() {
-  isListening ? stopListening() : startListening();
+  if (isListening) {
+    stopVoice();
+  } else {
+    startVoice();
+  }
 }
 
-function startListening() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { setVoiceStatus('❌ Speech recognition not available here'); return; }
-
-  recognition = new SR();
-  recognition.lang = 'en-US';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  recognition.onstart = () => {
-    isListening = true;
-    document.getElementById('voice-orb').classList.add('listening');
-    document.getElementById('voice-btn').textContent = '⬛ Stop';
-    setVoiceStatus('🔴 Listening...');
-  };
-
-  recognition.onresult = (e) => {
-    const transcript = e.results[0][0].transcript;
-    stopListening();
-    askQuestion(transcript);
-  };
-
-  recognition.onerror = () => { stopListening(); setVoiceStatus('Error. Try again.'); };
-  recognition.onend = () => stopListening();
-  recognition.start();
+function startVoice() {
+  isListening = true;
+  document.getElementById('voice-orb').classList.add('listening');
+  document.getElementById('voice-btn').textContent = '⟳ Waiting...';
+  setVoiceStatus('🌐 Browser opening — allow mic, speak, then return to VS Code...');
+  hideVoiceError();
+  vscode.postMessage({ type: 'startVoiceRecording' });
 }
 
-function stopListening() {
+function stopVoice() {
   isListening = false;
-  if (recognition) { recognition.stop(); recognition = null; }
   document.getElementById('voice-orb').classList.remove('listening');
-  document.getElementById('voice-btn').textContent = '🎙️ Start Listening';
-  setVoiceStatus('Click to speak — ask anything about your code');
+  document.getElementById('voice-btn').textContent = '🎙️ Start Recording';
+  setVoiceStatus('Click orb to start recording');
 }
 
 function stopSpeaking() {
   synth.cancel();
-  stopListening();
+  stopVoice();
+}
+
+function showVoiceError(msg) {
+  const el = document.getElementById('voice-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+function hideVoiceError() {
+  const el = document.getElementById('voice-error');
+  if (el) el.style.display = 'none';
 }
 
 function askQuestion(q) {
@@ -1311,8 +1314,21 @@ window.addEventListener('message', e => {
     case 'boilerplateResult': renderBoilerplate(m.data); break;
     case 'voiceAnswer':
       addChat(m.data, 'ai');
-      setVoiceStatus('Click to speak again');
+      setVoiceStatus('Click orb to record again');
       speakText(m.data);
+      break;
+    case 'transcribed':
+      stopVoice();
+      setVoiceStatus('You said: "' + m.text + '"');
+      addChat(m.text, 'user');
+      break;
+    case 'recordingStatus':
+      setVoiceStatus(m.message);
+      break;
+    case 'transcribeError':
+      stopVoice();
+      setVoiceStatus('Try text input below ↓');
+      showVoiceError(m.message);
       break;
     case 'error': showError(m.feature||'ctx', m.message); break;
     case 'startVoice': startListening(); break;
@@ -1355,6 +1371,21 @@ function wireButtons() {
   if (vBtn) vBtn.addEventListener('click', toggleVoice);
   const sBtn = document.getElementById('stop-btn');
   if (sBtn) sBtn.addEventListener('click', stopSpeaking);
+
+  // Voice text input
+  const sendBtn = document.getElementById('voice-send-btn');
+  if (sendBtn) sendBtn.addEventListener('click', () => {
+    const input = document.getElementById('voice-text-input');
+    const q = input.value.trim();
+    if (q) { askQuestion(q); input.value = ''; }
+  });
+  const textInput = document.getElementById('voice-text-input');
+  if (textInput) textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const q = textInput.value.trim();
+      if (q) { askQuestion(q); textInput.value = ''; }
+    }
+  });
 
   // Example questions
   document.querySelectorAll('[data-question]').forEach(el => {

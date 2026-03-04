@@ -3,8 +3,11 @@ import { CortexPanel } from './ui/cortexPanel';
 import { ContextRecovery } from './features/contextRecovery';
 import { CodeExplainer } from './features/codeExplainer';
 import { BoilerplateGenerator } from './features/boilerplateGenerator';
+import { VoiceRecorder } from './features/voiceRecorder';
+import { VoiceServer } from './features/voiceServer';
 
 let statusBarItem: vscode.StatusBarItem;
+let voiceServer: VoiceServer | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Cortex AI is now active');
@@ -122,6 +125,49 @@ export function activate(context: vscode.ExtensionContext) {
         break;
       }
 
+      case 'transcribeAudio': {
+        try {
+          const recorder = new VoiceRecorder();
+          const transcript = await recorder.transcribeBase64(message.audioBase64, message.mimeType, context);
+          CortexPanel.postMessage({ type: 'transcribed', text: transcript });
+          const explainer = new CodeExplainer();
+          const result = await explainer.answerQuestion(transcript, context);
+          CortexPanel.postMessage({ type: 'voiceAnswer', data: result });
+        } catch (err: any) {
+          CortexPanel.postMessage({ type: 'transcribeError', message: err.message });
+        }
+        break;
+      }
+
+      case 'startVoiceRecording': {
+        try {
+          // Start local HTTP server that opens browser for recording
+          if (!voiceServer) { voiceServer = new VoiceServer(); }
+          const port = await voiceServer.start(async (transcript: string) => {
+            // Called when browser sends audio and Whisper transcribes it
+            CortexPanel.postMessage({ type: 'transcribed', text: transcript });
+            try {
+              const explainer = new CodeExplainer();
+              const result = await explainer.answerQuestion(transcript, context);
+              CortexPanel.postMessage({ type: 'voiceAnswer', data: result });
+            } catch (err: any) {
+              CortexPanel.postMessage({ type: 'transcribeError', message: err.message });
+            }
+          });
+
+          // Open browser — browser has full mic access!
+          const url = vscode.Uri.parse('http://127.0.0.1:' + port);
+          await vscode.env.openExternal(url);
+          CortexPanel.postMessage({
+            type: 'recordingStatus',
+            message: '🌐 Browser opened — allow mic & speak your question, then come back to VS Code'
+          });
+        } catch (err: any) {
+          CortexPanel.postMessage({ type: 'transcribeError', message: err.message });
+        }
+        break;
+      }
+
       case 'insertCode': {
         const editor = vscode.window.activeTextEditor;
         if (editor) {
@@ -182,4 +228,5 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
   if (statusBarItem) { statusBarItem.dispose(); }
+  if (voiceServer) { voiceServer.stop(); voiceServer = null; }
 }
