@@ -372,39 +372,4 @@ MIT License — see [LICENSE](LICENSE) for details.
   <line x1="660" y1="340" x2="660" y2="380" stroke="#BEE3F8" stroke-width="1.5" stroke-dasharray="4,3"/>
   <polygon points="655,378 665,378 660,386" fill="#BEE3F8"/>
 
-  <!-- ── OUTPUT LAYER ── -->
-  <rect x="40" y="510" width="820" height="80" rx="14" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.5" filter="url(#shadow-sm)"/>
-  <text x="70" y="534" font-size="10" font-weight="700" fill="#9B9B99" letter-spacing="1.5">DEVELOPER OUTPUTS</text>
 
-  <rect x="60" y="542" width="140" height="36" rx="7" fill="#FFFFFF" stroke="#E8E8E5" stroke-width="1"/>
-  <text x="130" y="556" text-anchor="middle" font-size="10" font-weight="600" fill="#CF7B2E">📍 Context Briefing</text>
-  <text x="130" y="569" text-anchor="middle" font-size="9" fill="#6B6B6A">Where you stopped</text>
-
-  <rect x="220" y="542" width="140" height="36" rx="7" fill="#FFFFFF" stroke="#E8E8E5" stroke-width="1"/>
-  <text x="290" y="556" text-anchor="middle" font-size="10" font-weight="600" fill="#2B6CB0">🔍 Code Explanation</text>
-  <text x="290" y="569" text-anchor="middle" font-size="9" fill="#6B6B6A">Deep understanding</text>
-
-  <rect x="380" y="542" width="140" height="36" rx="7" fill="#FFFFFF" stroke="#E8E8E5" stroke-width="1"/>
-  <text x="450" y="556" text-anchor="middle" font-size="10" font-weight="600" fill="#276749">⬡ Generated Code</text>
-  <text x="450" y="569" text-anchor="middle" font-size="9" fill="#6B6B6A">Style-matched boilerplate</text>
-
-  <rect x="540" y="542" width="140" height="36" rx="7" fill="#FFFFFF" stroke="#E8E8E5" stroke-width="1"/>
-  <text x="610" y="556" text-anchor="middle" font-size="10" font-weight="600" fill="#553C9A">🎙️ Voice Answer</text>
-  <text x="610" y="569" text-anchor="middle" font-size="9" fill="#6B6B6A">Spoken + chat response</text>
-
-  <rect x="700" y="542" width="140" height="36" rx="7" fill="#FFFFFF" stroke="#E8E8E5" stroke-width="1"/>
-  <text x="770" y="556" text-anchor="middle" font-size="10" font-weight="600" fill="#C53030">⚡ Next Actions</text>
-  <text x="770" y="569" text-anchor="middle" font-size="9" fill="#6B6B6A">Prioritized tasks</text>
-
-  <!-- Arrow to outputs -->
-  <line x1="230" y1="480" x2="230" y2="510" stroke="#FDE68A" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <polygon points="225,508 235,508 230,516" fill="#FDE68A"/>
-  <line x1="660" y1="480" x2="660" y2="510" stroke="#FDE68A" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <polygon points="655,508 665,508 660,516" fill="#FDE68A"/>
-
-  <!-- Footer -->
-  <text x="450" y="608" text-anchor="middle" font-size="10" fill="#C0C0C0">BWT Akatsuki · TRAE AI IDE Hackathon · github.com/Loknath816/BWT_Akatsuki</text>
-</svg>
-rself*
-
-</div>
