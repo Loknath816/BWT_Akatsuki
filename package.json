@@ -1,0 +1,89 @@
+{
+  "name": "cortex",
+  "displayName": "Cortex AI",
+  "description": "AI layer for developer focus and flow — context recovery, code intelligence, boilerplate generation and voice interaction",
+  "version": "1.0.0",
+  "publisher": "cortex-ai",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["AI", "Programming Languages", "Other"],
+  "keywords": ["ai", "context", "productivity", "focus", "flow", "voice", "boilerplate"],
+  "icon": "media/icon.png",
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cortex.openPanel",
+        "title": "Cortex: Open AI Panel",
+        "icon": "$(brain)"
+      },
+      {
+        "command": "cortex.recoverContext",
+        "title": "Cortex: Recover My Context",
+        "icon": "$(history)"
+      },
+      {
+        "command": "cortex.explainCode",
+        "title": "Cortex: Explain This Code",
+        "icon": "$(lightbulb)"
+      },
+      {
+        "command": "cortex.generateBoilerplate",
+        "title": "Cortex: Generate Boilerplate",
+        "icon": "$(code)"
+      },
+      {
+        "command": "cortex.voiceAsk",
+        "title": "Cortex: Ask with Voice",
+        "icon": "$(mic)"
+      }
+    ],
+    "keybindings": [
+      { "command": "cortex.openPanel", "key": "ctrl+shift+a", "mac": "cmd+shift+a" },
+      { "command": "cortex.recoverContext", "key": "ctrl+shift+r", "mac": "cmd+shift+r" },
+      { "command": "cortex.explainCode", "key": "ctrl+shift+e", "mac": "cmd+shift+e" },
+      { "command": "cortex.generateBoilerplate", "key": "ctrl+shift+b", "mac": "cmd+shift+b" }
+    ],
+    "menus": {
+      "editor/context": [
+        { "command": "cortex.explainCode", "group": "cortex@1", "when": "editorHasSelection" },
+        { "command": "cortex.generateBoilerplate", "group": "cortex@2" }
+      ]
+    },
+    "configuration": {
+      "title": "Cortex AI",
+      "properties": {
+        "cortex.anthropicApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your Anthropic API key for Claude"
+        },
+        "cortex.autoRecover": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically show context briefing when reopening a project"
+        },
+        "cortex.voiceEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice interaction with Cortex"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
+    "node-fetch": "^3.3.2"
+  }
+}
