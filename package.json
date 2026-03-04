@@ -53,10 +53,10 @@
     "configuration": {
       "title": "Cortex AI",
       "properties": {
-        "cortex.geminiApiKey": {
+        "cortex.groqApiKey": {
           "type": "string",
           "default": "",
-          "description": "Your Google Gemini API key"
+          "description": "Your Groq API key"
         },
         "cortex.autoRecover": {
           "type": "boolean",

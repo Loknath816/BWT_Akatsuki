@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 
 export interface BoilerplateResult {
   code: string;
@@ -15,9 +15,9 @@ export class BoilerplateGenerator {
 
   private getApiKey(): string {
     const config = vscode.workspace.getConfiguration('cortex');
-    const key = config.get<string>('geminiApiKey') || '';
+    const key = config.get<string>('groqApiKey') || '';
     if (!key) {
-      throw new Error('No API key found. Please add your Gemini API key in Cortex settings.');
+      throw new Error('No API key found. Please add your Groq API key in Cortex settings.');
     }
     return key;
   }
@@ -28,8 +28,7 @@ export class BoilerplateGenerator {
     context: vscode.ExtensionContext
   ): Promise<BoilerplateResult> {
     const apiKey = this.getApiKey();
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const groq = new Groq({ apiKey });
 
     const styleContext = await this.analyzeCodebaseStyle();
     const activeFile = vscode.window.activeTextEditor?.document.getText() || '';
@@ -49,15 +48,21 @@ Language: ${language}
 
 Return ONLY valid JSON with no markdown, no backticks, no explanation — just raw JSON:
 {
-  "code": "the complete generated code as a string",
+  "code": "the complete generated code as a string with \\n for newlines",
   "language": "${language}",
   "fileName": "suggested filename",
   "description": "brief description of what was generated",
   "insertionPoint": "cursor"
 }`;
 
-    const result = await model.generateContent(fullPrompt);
-    const text = result.response.text();
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: fullPrompt }],
+      max_tokens: 1500,
+      temperature: 0.2,
+    });
+
+    const text = response.choices[0]?.message?.content || '{}';
     const clean = text.replace(/```json|```/g, '').trim();
     return JSON.parse(clean) as BoilerplateResult;
   }

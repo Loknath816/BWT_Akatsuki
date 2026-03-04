@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 
 export interface ContextBriefing {
   summary: string;
@@ -18,9 +18,9 @@ export class ContextRecovery {
 
   private getApiKey(): string {
     const config = vscode.workspace.getConfiguration('cortex');
-    const key = config.get<string>('geminiApiKey') || '';
+    const key = config.get<string>('groqApiKey') || '';
     if (!key) {
-      throw new Error('No API key found. Please add your Gemini API key in Cortex settings.');
+      throw new Error('No API key found. Please add your Groq API key in Cortex settings.');
     }
     return key;
   }
@@ -36,8 +36,7 @@ export class ContextRecovery {
 
   async generateBriefing(context: vscode.ExtensionContext): Promise<ContextBriefing> {
     const apiKey = this.getApiKey();
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const groq = new Groq({ apiKey });
 
     const workspaceInfo = await this.gatherWorkspaceInfo();
 
@@ -65,8 +64,14 @@ Return ONLY valid JSON with no markdown, no backticks, no explanation — just r
   "sessionGap": "2 hours ago"
 }`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1000,
+      temperature: 0.3,
+    });
+
+    const text = response.choices[0]?.message?.content || '{}';
     const clean = text.replace(/```json|```/g, '').trim();
     return JSON.parse(clean) as ContextBriefing;
   }
@@ -84,8 +89,8 @@ Return ONLY valid JSON with no markdown, no backticks, no explanation — just r
     };
 
     info.openFiles = vscode.window.tabGroups.all
-      .flatMap(g => g.tabs)
-      .map(tab => (tab.input as any)?.uri?.fsPath?.split(/[\\/]/).pop())
+      .flatMap((g: any) => g.tabs)
+      .map((tab: any) => tab.input?.uri?.fsPath?.split(/[\\/]/).pop())
       .filter(Boolean);
 
     try {
@@ -104,8 +109,7 @@ Return ONLY valid JSON with no markdown, no backticks, no explanation — just r
     } catch (_) {}
 
     try {
-      const gitLog = await this.getGitLog(rootPath);
-      info.recentCommits = gitLog;
+      info.recentCommits = await this.getGitLog(rootPath);
     } catch (_) {}
 
     return info;

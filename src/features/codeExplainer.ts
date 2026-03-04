@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 
 export interface CodeExplanation {
   summary: string;
@@ -15,9 +15,9 @@ export class CodeExplainer {
 
   private getApiKey(): string {
     const config = vscode.workspace.getConfiguration('cortex');
-    const key = config.get<string>('geminiApiKey') || '';
+    const key = config.get<string>('groqApiKey') || '';
     if (!key) {
-      throw new Error('No API key found. Please add your Gemini API key in Cortex settings.');
+      throw new Error('No API key found. Please add your Groq API key in Cortex settings.');
     }
     return key;
   }
@@ -29,8 +29,7 @@ export class CodeExplainer {
     context: vscode.ExtensionContext
   ): Promise<CodeExplanation> {
     const apiKey = this.getApiKey();
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const groq = new Groq({ apiKey });
 
     const surroundingContext = await this.getSurroundingContext();
 
@@ -62,16 +61,21 @@ Return ONLY valid JSON with no markdown, no backticks, no explanation — just r
   "relatedConcepts": ["related", "patterns"]
 }`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1000,
+      temperature: 0.3,
+    });
+
+    const text = response.choices[0]?.message?.content || '{}';
     const clean = text.replace(/```json|```/g, '').trim();
     return JSON.parse(clean) as CodeExplanation;
   }
 
   async answerQuestion(question: string, context: vscode.ExtensionContext): Promise<string> {
     const apiKey = this.getApiKey();
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const groq = new Groq({ apiKey });
 
     const openFilesContext = await this.getOpenFilesContext();
     const activeFile = vscode.window.activeTextEditor?.document.getText() || '';
@@ -87,8 +91,14 @@ DEVELOPER QUESTION: "${question}"
 
 Respond in 2-4 sentences maximum. Be direct, specific, and actionable.`;
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 400,
+      temperature: 0.5,
+    });
+
+    return response.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
   }
 
   private async getSurroundingContext(): Promise<string> {
