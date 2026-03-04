@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export interface CodeExplanation {
   summary: string;
@@ -15,9 +15,9 @@ export class CodeExplainer {
 
   private getApiKey(): string {
     const config = vscode.workspace.getConfiguration('cortex');
-    const key = config.get<string>('anthropicApiKey') || '';
+    const key = config.get<string>('geminiApiKey') || '';
     if (!key) {
-      throw new Error('No API key found. Please add your Anthropic API key in Cortex settings.');
+      throw new Error('No API key found. Please add your Gemini API key in Cortex settings.');
     }
     return key;
   }
@@ -29,14 +29,13 @@ export class CodeExplainer {
     context: vscode.ExtensionContext
   ): Promise<CodeExplanation> {
     const apiKey = this.getApiKey();
-    const client = new Anthropic({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-    // Get surrounding file context if code is a selection
     const surroundingContext = await this.getSurroundingContext();
 
     const prompt = `You are Cortex AI — an expert code intelligence engine inside a developer's IDE.
-
-Explain this code with deep technical insight. Go beyond surface-level description — explain WHY it exists and HOW it fits into the broader system.
+Explain this code with deep technical insight.
 
 FILE: ${fileName}
 LANGUAGE: ${language}
@@ -47,7 +46,7 @@ CODE TO EXPLAIN:
 ${code}
 \`\`\`
 
-Return ONLY valid JSON matching this exact schema:
+Return ONLY valid JSON with no markdown, no backticks, no explanation — just raw JSON:
 {
   "summary": "One clear sentence of what this code does",
   "purpose": "WHY this code exists — its role in the system",
@@ -55,60 +54,48 @@ Return ONLY valid JSON matching this exact schema:
     { "step": 1, "description": "First thing that happens" },
     { "step": 2, "description": "Second thing" }
   ],
-  "dependencies": ["list", "of", "key", "dependencies", "or", "concepts", "used"],
+  "dependencies": ["list", "of", "key", "dependencies"],
   "potentialIssues": [
-    { "severity": "high", "issue": "description of issue", "suggestion": "how to fix" }
+    { "severity": "high", "issue": "description", "suggestion": "how to fix" }
   ],
   "complexity": "low",
-  "relatedConcepts": ["related", "patterns", "or", "concepts", "developer", "should", "know"]
+  "relatedConcepts": ["related", "patterns"]
 }`;
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }]
-    });
-
-    const text = response.content.map(b => 'text' in b ? b.text : '').join('');
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
     const clean = text.replace(/```json|```/g, '').trim();
     return JSON.parse(clean) as CodeExplanation;
   }
 
   async answerQuestion(question: string, context: vscode.ExtensionContext): Promise<string> {
     const apiKey = this.getApiKey();
-    const client = new Anthropic({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    // Build codebase context from open files
     const openFilesContext = await this.getOpenFilesContext();
     const activeFile = vscode.window.activeTextEditor?.document.getText() || '';
     const activeFileName = vscode.window.activeTextEditor?.document.fileName.split(/[\\/]/).pop() || '';
 
-    const prompt = `You are Cortex AI — a voice-enabled AI companion inside a developer's IDE. 
-The developer is asking you a question about their codebase. Answer concisely and helpfully.
+    const prompt = `You are Cortex AI — a voice-enabled AI companion inside a developer's IDE.
+Answer the developer's question about their codebase concisely and helpfully.
 
 ${activeFile ? `CURRENT FILE (${activeFileName}):\n\`\`\`\n${activeFile.slice(0, 3000)}\n\`\`\`` : ''}
 ${openFilesContext ? `\nOTHER OPEN FILES:\n${openFilesContext}` : ''}
 
 DEVELOPER QUESTION: "${question}"
 
-Respond in 2-4 sentences maximum. Be direct, specific, and actionable. 
-If you reference code, mention specific function or variable names from their files.`;
+Respond in 2-4 sentences maximum. Be direct, specific, and actionable.`;
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 400,
-      messages: [{ role: 'user', content: prompt }]
-    });
-
-    return response.content.map(b => 'text' in b ? b.text : '').join('');
+    const result = await model.generateContent(prompt);
+    return result.response.text();
   }
 
   private async getSurroundingContext(): Promise<string> {
     try {
       const editor = vscode.window.activeTextEditor;
       if (!editor) { return ''; }
-      const fullText = editor.document.getText();
-      return fullText.slice(0, 2000);
+      return editor.document.getText().slice(0, 2000);
     } catch (_) { return ''; }
   }
 

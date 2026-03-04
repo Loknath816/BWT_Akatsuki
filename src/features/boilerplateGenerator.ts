@@ -29,7 +29,7 @@ export class BoilerplateGenerator {
   ): Promise<BoilerplateResult> {
     const apiKey = this.getApiKey();
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const styleContext = await this.analyzeCodebaseStyle();
     const activeFile = vscode.window.activeTextEditor?.document.getText() || '';

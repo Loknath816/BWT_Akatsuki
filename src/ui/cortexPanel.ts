@@ -64,6 +64,7 @@ export class CortexPanel {
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline'; img-src data: https:;">
 <title>Cortex AI</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -790,19 +791,19 @@ pre {
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-item active" onclick="switchTab('context')" id="tab-context">
+  <div class="nav-item active" id="tab-context">
     <span class="nav-icon">↩</span> Context
   </div>
-  <div class="nav-item" onclick="switchTab('explain')" id="tab-explain">
+  <div class="nav-item" id="tab-explain">
     <span class="nav-icon">◈</span> Explain
   </div>
-  <div class="nav-item" onclick="switchTab('boilerplate')" id="tab-boilerplate">
+  <div class="nav-item" id="tab-boilerplate">
     <span class="nav-icon">⬡</span> Generate
   </div>
-  <div class="nav-item" onclick="switchTab('voice')" id="tab-voice">
+  <div class="nav-item" id="tab-voice">
     <span class="nav-icon">🎙</span> Voice
   </div>
-  <div class="nav-item" onclick="switchTab('setup')" id="tab-setup">
+  <div class="nav-item" id="tab-setup">
     <span class="nav-icon">⚙</span> Setup
   </div>
 </div>
@@ -824,7 +825,7 @@ pre {
         <div class="card-title">↩ Context Recovery</div>
         <div class="card-desc">Instantly understand where you left off. Cortex reads your recent files, git history and open tabs to rebuild your mental context in seconds.</div>
         <div class="btn-row">
-          <button class="btn btn-primary" onclick="recoverContext()">↩ Recover My Context</button>
+          <button class="btn btn-primary" id="btn-recover">↩ Recover My Context</button>
         </div>
       </div>
       <div class="section-title">What you get</div>
@@ -868,7 +869,7 @@ pre {
         <div class="card-title">◈ Code Explainer</div>
         <div class="card-desc">Select any code in your editor — a function, a class, or an entire file — then click below. Cortex explains what it does, why it exists, and spots potential issues.</div>
         <div class="btn-row">
-          <button class="btn btn-primary" onclick="explainCode()">◈ Explain Selected Code</button>
+          <button class="btn btn-primary" id="btn-explain">◈ Explain Selected Code</button>
         </div>
       </div>
       <div class="section-title">Intelligence layers</div>
@@ -915,18 +916,18 @@ e.g. Database model for products table"></textarea>
         </select>
       </div>
 
-      <button class="btn btn-primary" onclick="generateBoilerplate()" style="width:100%">⬡ Generate Code</button>
+      <button class="btn btn-primary" id="btn-generate" style="width:100%">⬡ Generate Code</button>
     </div>
 
     <div class="section-title" style="margin-top:4px">Quick generate</div>
     <div class="chips">
-      <div class="chip" onclick="quickBp('REST API endpoint')">REST endpoint</div>
-      <div class="chip" onclick="quickBp('authentication middleware')">Auth middleware</div>
-      <div class="chip" onclick="quickBp('database model')">DB model</div>
-      <div class="chip" onclick="quickBp('React custom hook')">React hook</div>
-      <div class="chip" onclick="quickBp('error handler middleware')">Error handler</div>
-      <div class="chip" onclick="quickBp('unit test suite')">Unit test</div>
-      <div class="chip" onclick="quickBp('async queue worker')">Queue worker</div>
+      <div class="chip" data-quick="REST API endpoint">REST endpoint</div>
+      <div class="chip" data-quick="authentication middleware">Auth middleware</div>
+      <div class="chip" data-quick="database model">DB model</div>
+      <div class="chip" data-quick="React custom hook">React hook</div>
+      <div class="chip" data-quick="error handler middleware">Error handler</div>
+      <div class="chip" data-quick="unit test suite">Unit test</div>
+      <div class="chip" data-quick="async queue worker">Queue worker</div>
     </div>
 
     <div id="bp-result" style="display:none"></div>
@@ -936,20 +937,20 @@ e.g. Database model for products table"></textarea>
   <div class="panel" id="panel-voice">
     <div class="card">
       <div class="voice-center">
-        <div class="voice-orb" id="voice-orb" onclick="toggleVoice()">🎙️</div>
+        <div class="voice-orb" id="voice-orb">🎙️</div>
         <div class="voice-status" id="voice-status">Click to speak — ask anything about your code</div>
         <div class="btn-row" style="justify-content:center;margin-top:0;margin-bottom:14px">
-          <button class="btn btn-primary" onclick="toggleVoice()" id="voice-btn" style="background:var(--purple);box-shadow:0 2px 6px rgba(85,60,154,0.3)">🎙️ Start Listening</button>
-          <button class="btn btn-secondary" onclick="stopSpeaking()">⬛ Stop</button>
+          <button class="btn btn-primary" id="voice-btn" style="background:var(--purple);box-shadow:0 2px 6px rgba(85,60,154,0.3)">🎙️ Start Listening</button>
+          <button class="btn btn-secondary" id="stop-btn">⬛ Stop</button>
         </div>
       </div>
 
       <div class="section-title">Try asking</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px">
-        <button class="example-q" onclick="askQuestion('Where is the authentication logic?')">"Where is the authentication logic?"</button>
-        <button class="example-q" onclick="askQuestion('What does the payment module do?')">"What does the payment module do?"</button>
-        <button class="example-q" onclick="askQuestion('Explain the database connection setup')">"Explain the database connection setup"</button>
-        <button class="example-q" onclick="askQuestion('What should I work on next?')">"What should I work on next?"</button>
+        <button class="example-q" data-question="Where is the authentication logic?">"Where is the authentication logic?"</button>
+        <button class="example-q" data-question="What does the payment module do?">"What does the payment module do?"</button>
+        <button class="example-q" data-question="Explain the database connection setup">"Explain the database connection setup"</button>
+        <button class="example-q" data-question="What should I work on next?">"What should I work on next?"</button>
       </div>
     </div>
 
@@ -978,8 +979,8 @@ e.g. Database model for products table"></textarea>
         <input type="password" class="input" id="key-input" placeholder="AIza..."/>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="saveKey()">💾 Save Key</button>
-        <button class="btn btn-ghost" onclick="window.open('https://aistudio.google.com')">Get free key ↗</button>
+        <button class="btn btn-primary" id="btn-save-key">💾 Save Key</button>
+        <button class="btn btn-ghost" id="btn-get-key">Get free key ↗</button>
       </div>
       <div style="margin-top:10px;font-size:11px;color:var(--text3);line-height:1.7">
         Free at aistudio.google.com → API Keys → Create key<br/>
@@ -1115,8 +1116,10 @@ function renderContext(d) {
     : '') +
 
     '<div class="btn-row" style="margin-top:14px">' +
-      '<button class="btn btn-secondary" onclick="recoverContext()">↩ Refresh</button>' +
+      '<button class="btn btn-secondary" id="btn-refresh">↩ Refresh</button>' +
     '</div>';
+  const ref = document.getElementById('btn-refresh');
+  if (ref) ref.addEventListener('click', recoverContext);
 }
 
 // ── RENDER EXPLAIN ──
@@ -1158,7 +1161,9 @@ function renderExplain(d) {
         '<div style="margin-bottom:14px">' + d.dependencies.map(t => '<span class="tag">' + esc(t) + '</span>').join('') + '</div>'
       : '') +
     '</div>' +
-    '<div class="btn-row"><button class="btn btn-secondary" onclick="explainCode()">◈ Explain Again</button></div>';
+    '<div class="btn-row"><button class="btn btn-secondary" id="btn-explain-again">◈ Explain Again</button></div>';
+  const ea = document.getElementById('btn-explain-again');
+  if (ea) ea.addEventListener('click', explainCode);
 }
 
 // ── RENDER BOILERPLATE ──
@@ -1176,14 +1181,18 @@ function renderBoilerplate(d) {
         '<div class="code-bar">' +
           '<span>' + esc(d.language||'code') + '</span>' +
           '<div class="code-actions">' +
-            '<button class="code-btn" onclick="insertCode(window._lastCode)">↙ Insert at cursor</button>' +
-            '<button class="code-btn" onclick="copyCode(window._lastCode)">⎘ Copy</button>' +
+            '<button class="code-btn" id="btn-insert-code">↙ Insert at cursor</button>' +
+            '<button class="code-btn" id="btn-copy-code">⎘ Copy</button>' +
           '</div>' +
         '</div>' +
         '<pre>' + safe + '</pre>' +
       '</div>' +
     '</div>' +
     '<div style="font-size:11px;color:var(--text3);margin-top:4px">' + esc(d.description||'') + '</div>';
+  const ic = document.getElementById('btn-insert-code');
+  if (ic) ic.addEventListener('click', () => insertCode(window._lastCode));
+  const cc = document.getElementById('btn-copy-code');
+  if (cc) cc.addEventListener('click', () => copyCode(window._lastCode));
 }
 
 // ── VOICE ──
@@ -1275,8 +1284,10 @@ function showError(feature, msg) {
       '<div class="card-title" style="color:var(--red)">⚠️ Error</div>' +
       '<div class="card-desc">' + esc(msg) + '</div>' +
       (msg.includes('key') ?
-        '<div class="btn-row"><button class="btn btn-secondary" onclick="switchTab(\'setup\')">⚙ Add API Key</button></div>' : '') +
+        '<div class="btn-row"><button class="btn btn-secondary" id="btn-err-setup">⚙ Add API Key</button></div>' : '') +
     '</div>';
+  const eb = document.getElementById('btn-err-setup');
+  if (eb) eb.addEventListener('click', () => switchTab('setup'));
 }
 
 // ── UTILITIES ──
@@ -1311,6 +1322,58 @@ window.addEventListener('message', e => {
       break;
   }
 });
+
+// ── WIRE ALL BUTTONS ──
+function wireButtons() {
+  // Nav tabs
+  ['context','explain','boilerplate','voice','setup'].forEach(tab => {
+    const el = document.getElementById('tab-' + tab);
+    if (el) el.addEventListener('click', () => switchTab(tab));
+  });
+
+  // Context
+  const r = document.getElementById('btn-recover');
+  if (r) r.addEventListener('click', recoverContext);
+
+  // Explain
+  const ex = document.getElementById('btn-explain');
+  if (ex) ex.addEventListener('click', explainCode);
+
+  // Generate
+  const gen = document.getElementById('btn-generate');
+  if (gen) gen.addEventListener('click', generateBoilerplate);
+
+  // Quick chips
+  document.querySelectorAll('[data-quick]').forEach(el => {
+    el.addEventListener('click', () => quickBp(el.getAttribute('data-quick')));
+  });
+
+  // Voice orb & buttons
+  const orb = document.getElementById('voice-orb');
+  if (orb) orb.addEventListener('click', toggleVoice);
+  const vBtn = document.getElementById('voice-btn');
+  if (vBtn) vBtn.addEventListener('click', toggleVoice);
+  const sBtn = document.getElementById('stop-btn');
+  if (sBtn) sBtn.addEventListener('click', stopSpeaking);
+
+  // Example questions
+  document.querySelectorAll('[data-question]').forEach(el => {
+    el.addEventListener('click', () => askQuestion(el.getAttribute('data-question')));
+  });
+
+  // Setup
+  const sk = document.getElementById('btn-save-key');
+  if (sk) sk.addEventListener('click', saveKey);
+  const gk = document.getElementById('btn-get-key');
+  if (gk) gk.addEventListener('click', () => vscode.postMessage({ type: 'openUrl', url: 'https://aistudio.google.com' }));
+}
+
+// Wire on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', wireButtons);
+} else {
+  wireButtons();
+}
 
 vscode.postMessage({ type: 'checkApiKey' });
 </script>
